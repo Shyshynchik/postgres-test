@@ -1,0 +1,23 @@
+services:
+  db:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_performance:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    entrypoint: ["java", "-jar", "sql-0.0.1-SNAPSHOT.jar" ]
+    depends_on:
+      - db
+volumes:
+  postgres_performance:
