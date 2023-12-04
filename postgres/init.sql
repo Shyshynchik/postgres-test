@@ -15,7 +15,7 @@ INSERT INTO user_status_int (code, name) VALUES (100400, 'Canceled');
 
 CREATE TABLE user_status_varchar
 (
-    code varchar primary key,
+    code varchar(8) primary key,
     name varchar
 );
 
@@ -81,7 +81,7 @@ CREATE TABLE users_fk_varchar
     email   varchar not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
-    status varchar not null references user_status_varchar(code)
+    status varchar(8) not null references user_status_varchar(code)
 );
 
 INSERT INTO users_fk_varchar (user_id, login, email, status)
@@ -125,7 +125,7 @@ CREATE TABLE users_varchar
     email   varchar not null,
     created_at timestamp default now(),
     updated_at timestamp default now(),
-    status varchar not null
+    status varchar(8) not null
 );
 
 INSERT INTO users_varchar (user_id, login, email, status)
