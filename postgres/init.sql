@@ -217,15 +217,14 @@ where query like 'SELECT * FROM not_cluster_table'
 
 SELECT CASE
            WHEN query ~~ '%id = %' THEN 'select_one'
-           WHEN query ~~ '%$100%' and query !~~ '%$1000%' THEN 'select_in_100'
-           WHEN query ~~ '%$1000%' THEN 'select_in_1000'
-           WHEN query ~~ '%IN (SELECT id FROM%' THEN 'select_all_minus_one'
+           WHEN query ~~ '%$100%' and query !~~ '%$1000%' and query !~~ '%$10000%' THEN 'select_in_100'
+           WHEN query ~~ '%$1000%' and query !~~ '%$10000%' THEN 'select_in_1000'
+           WHEN query ~~ '%$10000%' THEN 'select_in_10000'
            END as type,
        CASE
            WHEN query ~~ '%not_cluster_table%' THEN 'not_cluster_table'
            ELSE 'cluster_table'
            END as table_type,
-       query,
        calls,
        total_exec_time,
        min_exec_time,
