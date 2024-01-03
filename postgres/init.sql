@@ -50,7 +50,7 @@ select gen_random_uuid() as uuid,
        md5(random()::text),
        md5(random()::text),
        (array ['Active'::status_enum, 'Canceled'::status_enum, 'Inactive'::status_enum])[floor(random() * 3 + 1)]
-from generate_series(1, 500000) s(i);
+from generate_series(1, 10000) s(i);
 
 CREATE TABLE users_fk_int
 (
@@ -160,3 +160,79 @@ where query like 'SELECT * FROM users_enum WHERE status =%'
    or query like 'SELECT * FROM users_fk_uuid WHERE status =%'
    or query like 'SELECT * FROM users_fk_varchar WHERE status =%'
    or query like 'SELECT * FROM users_varchar WHERE status =%';
+
+CREATE TABLE cluster_table
+(
+    id         UUID PRIMARY KEY,
+    login      varchar     not null,
+    email      varchar     not null,
+    created_at timestamp default now(),
+    updated_at timestamp default now(),
+    status     status_enum not null,
+    password   varchar     not null
+);
+
+INSERT INTO cluster_table (id, login, email, status, password)
+select gen_random_uuid() as uuid,
+       md5(random()::text),
+       md5(random()::text),
+       (array ['Active'::status_enum, 'Canceled'::status_enum, 'Inactive'::status_enum])[floor(random() * 3 + 1)],
+       md5(random()::text)
+from generate_series(1, 2000000) s(i);
+
+CREATE TABLE not_cluster_table
+(
+    surrogate_id UUID PRIMARY KEY,
+    id           UUID        NOT NULL,
+    login        varchar     not null,
+    email        varchar     not null,
+    created_at   timestamp default now(),
+    updated_at   timestamp default now(),
+    status       status_enum not null,
+    password     varchar     not null
+);
+
+CREATE UNIQUE INDEX idx_surrogate_id on not_cluster_table (id);
+
+INSERT INTO not_cluster_table (surrogate_id, id, login, email, status, password)
+select
+    id,
+    id,
+    login,
+    email,
+    status,
+    password
+from cluster_table;
+
+SELECT
+    calls,
+    total_exec_time,
+    min_exec_time,
+    max_exec_time,
+    mean_exec_time,
+    rows
+from pg_stat_statements
+where query like 'SELECT * FROM not_cluster_table'
+   or query like 'SELECT * FROM cluster_table';
+
+SELECT CASE
+           WHEN query ~~ '%id = %' THEN 'select_one'
+           WHEN query ~~ '%$100%' and query !~~ '%$1000%' THEN 'select_in_100'
+           WHEN query ~~ '%$1000%' THEN 'select_in_1000'
+           WHEN query ~~ '%IN (SELECT id FROM%' THEN 'select_all_minus_one'
+           END as type,
+       CASE
+           WHEN query ~~ '%not_cluster_table%' THEN 'not_cluster_table'
+           ELSE 'cluster_table'
+           END as table_type,
+       query,
+       calls,
+       total_exec_time,
+       min_exec_time,
+       max_exec_time,
+       mean_exec_time,
+       rows
+from pg_stat_statements
+where query ~~ 'SELECT * FROM not_cluster_table%'
+   or query ~~ 'SELECT * FROM cluster_table%'
+ORDER BY type, table_type;

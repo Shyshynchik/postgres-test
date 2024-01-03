@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class SqlQueries {
     private final JdbcTemplate jdbcTemplate;
     private static final String DEFAULT_QUERY = "SELECT * FROM %s WHERE status = %s";
-    private static final int DEFAULT_EXECUTION_TIMES = 1000;
+    private static final int DEFAULT_EXECUTION_TIMES = 100;
 
     public void selectEnum() {
         IntStream.range(0, DEFAULT_EXECUTION_TIMES)
